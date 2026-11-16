@@ -1,0 +1,589 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Credit Card Fraud Detection</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 35px 20px;
+            font-family: Arial, sans-serif;
+            background: #101827;
+            color: white;
+        }
+
+        .container {
+            max-width: 1050px;
+            margin: auto;
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 14px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #cbd5e1;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            font-size: 19px;
+            margin-top: 28px;
+            border-bottom: 1px solid #475569;
+            padding-bottom: 10px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 18px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        label {
+            font-size: 14px;
+            color: #e2e8f0;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 11px;
+            border-radius: 7px;
+            border: 1px solid #475569;
+            background: #0f172a;
+            color: white;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 28px;
+            padding: 14px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: wait;
+        }
+
+        #result {
+            display: none;
+            margin-top: 25px;
+            padding: 22px;
+            border-radius: 10px;
+            background: #0f172a;
+        }
+
+        .fraud {
+            border: 2px solid #ef4444;
+        }
+
+        .legitimate {
+            border: 2px solid #22c55e;
+        }
+
+        .tips {
+            margin-top: 18px;
+            padding: 15px;
+            background: #1e293b;
+            border-radius: 8px;
+        }
+
+        .error {
+            color: #f87171;
+        }
+
+        .loading {
+            color: #93c5fd;
+        }
+
+        @media (max-width: 650px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Credit Card Fraud Detection</h1>
+
+    <p class="subtitle">
+        Enter transaction details to predict potential credit card fraud.
+    </p>
+
+    <form id="predictionForm">
+
+        <div id="formFields">
+            <p class="loading">Loading transaction fields...</p>
+        </div>
+
+        <button type="submit" id="predictButton">
+            Predict Transaction
+        </button>
+
+    </form>
+
+    <div id="result"></div>
+
+</div>
+
+<script>
+
+const formFields = document.getElementById("formFields");
+const resultBox = document.getElementById("result");
+const predictButton = document.getElementById("predictButton");
+
+let featureSchema = {};
+
+
+// ----------------------------------------
+// FORMAT FIELD LABELS
+// ----------------------------------------
+
+function formatLabel(name) {
+
+    return name
+        .replaceAll("_", " ")
+        .replace(/\b\w/g, letter => letter.toUpperCase());
+
+}
+
+
+// ----------------------------------------
+// LOAD MODEL FEATURE SCHEMA
+// ----------------------------------------
+
+async function loadSchema() {
+
+    try {
+
+        const response = await fetch("/schema");
+
+        if (!response.ok) {
+            throw new Error("Could not load feature schema.");
+        }
+
+        const data = await response.json();
+
+        featureSchema = data.features;
+
+        createForm();
+
+    } catch (error) {
+
+        formFields.innerHTML =
+            `<p class="error">${error.message}</p>`;
+
+    }
+
+}
+
+
+// ----------------------------------------
+// CREATE INPUT FIELDS AUTOMATICALLY
+// ----------------------------------------
+
+function createForm() {
+
+    formFields.innerHTML = "";
+
+    const groups = {
+        "Transaction Details": [
+            "amount_usd",
+            "hours_since_last_txn",
+            "txn_count_last_24h",
+            "distance_from_home_km",
+            "card_age_months",
+            "customer_age",
+            "account_balance_usd",
+            "time_of_day_hour",
+            "day_of_week"
+        ],
+
+        "Risk Indicators": [
+            "cvv_retry_count",
+            "velocity_score",
+            "merchant_risk_score",
+            "prior_disputes"
+        ],
+
+        "Merchant and Payment Details": [
+            "merchant_category",
+            "card_type",
+            "auth_method",
+            "channel",
+            "device_type"
+        ],
+
+        "Fraud Indicators": [
+            "is_foreign_transaction",
+            "is_new_merchant",
+            "used_vpn",
+            "ip_country_mismatch",
+            "billing_shipping_mismatch",
+            "is_ai_generated_scam_attempt"
+        ]
+    };
+
+    const allFeatures = Object.keys(featureSchema);
+
+    for (const [groupName, groupFeatures] of Object.entries(groups)) {
+
+        const availableFeatures = groupFeatures.filter(
+            feature => allFeatures.includes(feature)
+        );
+
+        if (availableFeatures.length === 0) continue;
+
+        const heading = document.createElement("h2");
+        heading.textContent = groupName;
+
+        formFields.appendChild(heading);
+
+        const grid = document.createElement("div");
+        grid.className = "form-grid";
+
+        availableFeatures.forEach(feature => {
+
+            const rule = featureSchema[feature];
+
+            const wrapper = document.createElement("div");
+            wrapper.className = "field";
+
+            const label = document.createElement("label");
+            label.textContent = formatLabel(feature);
+            label.htmlFor = feature;
+
+            let input;
+
+            if (rule.type === "categorical") {
+
+                input = document.createElement("select");
+
+                const placeholder = document.createElement("option");
+                placeholder.value = "";
+                placeholder.textContent = "Select an option";
+                placeholder.disabled = true;
+                placeholder.selected = true;
+
+                input.appendChild(placeholder);
+
+                rule.allowed.forEach(value => {
+
+                    const option = document.createElement("option");
+
+                    option.value = value;
+                    option.textContent = value;
+
+                    input.appendChild(option);
+
+                });
+
+            } else {
+
+                input = document.createElement("input");
+
+                input.type = "number";
+                input.step = "any";
+
+                input.min = rule.min;
+                input.max = rule.max;
+
+                input.placeholder =
+                    `${rule.min} to ${rule.max}`;
+
+            }
+
+            input.id = feature;
+            input.name = feature;
+            input.required = true;
+
+            wrapper.appendChild(label);
+            wrapper.appendChild(input);
+
+            grid.appendChild(wrapper);
+
+        });
+
+        formFields.appendChild(grid);
+
+    }
+
+    // Add any model features not included in the predefined groups.
+    const groupedFeatures = Object.values(groups).flat();
+
+    const remainingFeatures = allFeatures.filter(
+        feature => !groupedFeatures.includes(feature)
+    );
+
+    if (remainingFeatures.length > 0) {
+
+        const heading = document.createElement("h2");
+        heading.textContent = "Additional Features";
+
+        formFields.appendChild(heading);
+
+        const grid = document.createElement("div");
+        grid.className = "form-grid";
+
+        remainingFeatures.forEach(feature => {
+
+            const rule = featureSchema[feature];
+
+            const wrapper = document.createElement("div");
+            wrapper.className = "field";
+
+            const label = document.createElement("label");
+            label.textContent = formatLabel(feature);
+
+            let input;
+
+            if (rule.type === "categorical") {
+
+                input = document.createElement("select");
+
+                const placeholder = document.createElement("option");
+                placeholder.value = "";
+                placeholder.textContent = "Select an option";
+                placeholder.disabled = true;
+                placeholder.selected = true;
+
+                input.appendChild(placeholder);
+
+                rule.allowed.forEach(value => {
+
+                    const option = document.createElement("option");
+                    option.value = value;
+                    option.textContent = value;
+
+                    input.appendChild(option);
+
+                });
+
+            } else {
+
+                input = document.createElement("input");
+                input.type = "number";
+                input.step = "any";
+                input.min = rule.min;
+                input.max = rule.max;
+
+            }
+
+            input.id = feature;
+            input.name = feature;
+            input.required = true;
+
+            wrapper.appendChild(label);
+            wrapper.appendChild(input);
+
+            grid.appendChild(wrapper);
+
+        });
+
+        formFields.appendChild(grid);
+
+    }
+
+}
+
+
+// ----------------------------------------
+// COLLECT INPUT VALUES
+// ----------------------------------------
+
+function collectFeatures() {
+
+    const features = {};
+
+    for (const [name, rule] of Object.entries(featureSchema)) {
+
+        const input = document.getElementById(name);
+
+        if (rule.type === "numeric") {
+
+            features[name] = Number(input.value);
+
+        } else {
+
+            features[name] = input.value;
+
+        }
+
+    }
+
+    return features;
+
+}
+
+
+// ----------------------------------------
+// FRAUD PREVENTION TIPS
+// ----------------------------------------
+
+function getTips(features, prediction) {
+
+    if (prediction === 1) {
+
+        return [
+            "Verify the transaction with the cardholder.",
+            "Review unusual transaction locations and device details.",
+            "Check repeated CVV attempts and suspicious merchant activity."
+        ];
+
+    }
+
+    return [
+        "Continue monitoring transaction activity.",
+        "Use secure authentication methods.",
+        "Review unusual spending patterns regularly."
+    ];
+
+}
+
+
+// ----------------------------------------
+// SUBMIT PREDICTION
+// ----------------------------------------
+
+document.getElementById("predictionForm")
+    .addEventListener("submit", async function(event) {
+
+        event.preventDefault();
+
+        resultBox.style.display = "block";
+        resultBox.className = "";
+        resultBox.textContent = "Analyzing transaction...";
+
+        predictButton.disabled = true;
+        predictButton.textContent = "Processing...";
+
+        try {
+
+            const features = collectFeatures();
+
+            const response = await fetch("/predict", {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    features: features
+                })
+
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+
+                const message = typeof data.detail === "string"
+                    ? data.detail
+                    : JSON.stringify(data.detail);
+
+                throw new Error(message);
+
+            }
+
+            const prediction = data.prediction;
+
+            const tips = getTips(features, prediction);
+
+            resultBox.className =
+                prediction === 1 ? "fraud" : "legitimate";
+
+            resultBox.innerHTML = `
+                <h2>Prediction Result</h2>
+
+                <h3>${data.result}</h3>
+
+                <p>
+                    Prediction:
+                    <strong>${prediction}</strong>
+                </p>
+
+                <p>
+                    Model confidence:
+                    <strong>
+                        ${data.confidence === null
+                            ? "Not available"
+                            : data.confidence + "%"}
+                    </strong>
+                </p>
+
+                <div class="tips">
+
+                    <h3>Recommended Actions</h3>
+
+                    <ul>
+                        ${tips.map(tip => `<li>${tip}</li>`).join("")}
+                    </ul>
+
+                </div>
+            `;
+
+        } catch (error) {
+
+            resultBox.className = "fraud";
+
+            resultBox.innerHTML = `
+                <h3>Prediction Error</h3>
+                <p>${error.message}</p>
+            `;
+
+        } finally {
+
+            predictButton.disabled = false;
+            predictButton.textContent = "Predict Transaction";
+
+        }
+
+    });
+
+
+// Load the form when the page opens.
+loadSchema();
+
+</script>
+
+</body>
+</html>
