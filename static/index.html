@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FraudGuard | Transaction Security</title>
+
   <style>
     :root {
       --bg: #f4f7fb;
@@ -53,8 +54,15 @@
     }
 
     .intro { margin-bottom: 25px; }
-    .intro h1 { font-size: clamp(26px, 4vw, 36px); margin: 0 0 9px; }
-    .intro p { color: var(--muted); margin: 0; line-height: 1.6; }
+    .intro h1 {
+      font-size: clamp(26px, 4vw, 36px);
+      margin: 0 0 9px;
+    }
+    .intro p {
+      color: var(--muted);
+      margin: 0;
+      line-height: 1.6;
+    }
 
     .layout {
       display: grid;
@@ -72,7 +80,12 @@
     }
 
     .panel h2 { font-size: 19px; margin: 0 0 7px; }
-    .subtext { color: var(--muted); font-size: 13px; margin: 0 0 23px; }
+
+    .subtext {
+      color: var(--muted);
+      font-size: 13px;
+      margin: 0 0 23px;
+    }
 
     .fields {
       display: grid;
@@ -148,7 +161,12 @@
 
     .side-card { margin-bottom: 17px; }
     .side-card h3 { font-size: 14px; margin: 0 0 9px; }
-    .side-card p { font-size: 13px; color: var(--muted); line-height: 1.6; margin: 0; }
+    .side-card p {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin: 0;
+    }
 
     .result {
       display: none;
@@ -209,53 +227,70 @@
 </head>
 
 <body>
+
 <header>
   <div class="brand">Fraud<span>Guard</span></div>
   <div class="status">● Transaction Analysis System</div>
 </header>
 
 <main>
+
   <section class="intro">
     <h1>Credit Card Fraud Detection</h1>
     <p>Enter transaction details to estimate the likelihood of fraudulent activity.</p>
   </section>
 
   <div class="layout">
+
     <section class="panel">
       <h2>Transaction Details</h2>
       <p class="subtext">Enter the transaction information below.</p>
 
       <form id="fraudForm">
+
         <div class="fields" id="mainFields"></div>
 
         <details>
           <summary>Advanced Details · 15 additional features</summary>
+
           <p class="advanced-note">
-            These fields are also used by the trained model. Enter the actual
-            transaction information where available. Do not guess fraud indicators.
+            These fields are also used by the trained model.
+            Enter actual transaction information where available.
           </p>
+
           <div class="fields" id="advancedFields"></div>
         </details>
 
-        <button type="submit" id="submitBtn">Analyze Transaction</button>
+        <button type="submit" id="submitBtn">
+          Analyze Transaction
+        </button>
+
       </form>
 
       <div class="error" id="errorBox"></div>
 
       <section class="result" id="resultBox" aria-live="polite">
         <h3>Analysis Result</h3>
+
         <div class="result-value" id="predictionText"></div>
+
         <p id="confidenceText"></p>
-        <div class="meter"><div class="meter-fill" id="meterFill"></div></div>
+
+        <div class="meter">
+          <div class="meter-fill" id="meterFill"></div>
+        </div>
+
         <p id="resultNote"></p>
+
         <small>
-          Model confidence is an estimate, not a guarantee that a transaction is
-          fraudulent or legitimate.
+          Model confidence is an estimate, not a guarantee that a transaction
+          is fraudulent or legitimate.
         </small>
       </section>
     </section>
 
     <aside>
+
       <div class="panel side-card">
         <h3>How it works</h3>
         <p>
@@ -267,18 +302,20 @@
       <div class="panel side-card">
         <h3>24 model features</h3>
         <p>
-          The main form contains 9 commonly used inputs. The remaining 15 inputs
-          are available under Advanced Details. All 24 are sent to the model.
+          The main form contains 9 commonly used inputs.
+          The remaining 15 inputs are available under Advanced Details.
+          All 24 are sent to the model.
         </p>
       </div>
 
       <div class="panel side-card">
         <h3>Important</h3>
         <p>
-          This is a machine learning demonstration, not a replacement for bank
-          fraud monitoring or human review.
+          This is a machine learning demonstration, not a replacement for
+          bank fraud monitoring or human review.
         </p>
       </div>
+
     </aside>
   </div>
 </main>
@@ -286,6 +323,8 @@
 <footer>FraudGuard · Credit Card Fraud Detection</footer>
 
 <script>
+
+  // MAIN FEATURES
   const mainFeatures = [
     ["amount_usd", "Transaction Amount"],
     ["hours_since_last_txn", "Hours Since Last Transaction"],
@@ -298,6 +337,7 @@
     ["channel", "Payment Channel"]
   ];
 
+  // ADVANCED FEATURES
   const advancedFeatures = [
     ["card_age_months", "Card Age (months)"],
     ["cvv_retry_count", "CVV Retry Count"],
@@ -316,6 +356,7 @@
     ["is_ai_generated_scam_attempt", "AI-Generated Scam Attempt"]
   ];
 
+  // BINARY FEATURES
   const binaryFeatures = new Set([
     "is_foreign_transaction",
     "is_new_merchant",
@@ -327,221 +368,383 @@
 
   let schema = {};
 
+  // GET FEATURE RULES FROM BACKEND
   function getSpec(name) {
     return schema[name] || {};
   }
 
+  // IMPORTANT:
+  // Your app.py returns categorical options under "allowed".
   function getOptions(spec) {
     if (Array.isArray(spec)) return spec;
-    return spec.values || spec.categories || spec.options ||
-           spec.allowed_values || spec.enum || null;
+
+    return spec.allowed ||
+           spec.values ||
+           spec.categories ||
+           spec.options ||
+           spec.allowed_values ||
+           spec.enum ||
+           null;
   }
 
+  // CREATE INPUT FIELDS
   function createField(name, label) {
+
     const spec = getSpec(name);
+
     const wrapper = document.createElement("div");
     wrapper.className = "field";
 
     const labelElement = document.createElement("label");
     labelElement.htmlFor = name;
     labelElement.textContent = label;
+
     wrapper.appendChild(labelElement);
 
     const options = getOptions(spec);
     let input;
 
-    if (options) {
+    // CATEGORICAL FEATURES
+    if (options && options.length > 0) {
+
       input = document.createElement("select");
-      input.add(new Option("Select " + label, ""));
+
+      input.add(
+        new Option("Select " + label, "")
+      );
 
       options.forEach(value => {
-        input.add(new Option(String(value), String(value)));
+        input.add(
+          new Option(String(value), String(value))
+        );
       });
-    } else if (binaryFeatures.has(name)) {
+
+    }
+
+    // CATEGORICAL FALLBACK
+    else if (spec.type === "categorical") {
+
+      input = document.createElement("input");
+      input.type = "text";
+      input.placeholder = "Enter " + label;
+
+    }
+
+    // BINARY FEATURES
+    else if (binaryFeatures.has(name)) {
+
       input = document.createElement("select");
+
       input.add(new Option("Select " + label, ""));
       input.add(new Option("No", "0"));
       input.add(new Option("Yes", "1"));
-    } else {
+
+    }
+
+    // NUMERIC FEATURES
+    else {
+
       input = document.createElement("input");
       input.type = "number";
 
-      if (spec.min !== undefined) input.min = spec.min;
-      if (spec.max !== undefined) input.max = spec.max;
-      if (spec.step !== undefined) input.step = spec.step;
-      else input.step = "any";
+      if (spec.min !== undefined) {
+        input.min = spec.min;
+      }
+
+      if (spec.max !== undefined) {
+        input.max = spec.max;
+      }
+
+      input.step = "any";
+
     }
 
     input.id = name;
     input.name = name;
     input.required = true;
 
-    // Only use defaults explicitly supplied by the backend.
-    if (spec.default !== undefined && spec.default !== null) {
-      input.value = String(spec.default);
-    } else if (spec.median !== undefined && spec.median !== null) {
-      input.value = String(spec.median);
-    } else if (spec.mode !== undefined && spec.mode !== null) {
-      input.value = String(spec.mode);
-    }
-
     wrapper.appendChild(input);
 
+    // SHOW NUMERIC RANGE
     if (spec.min !== undefined && spec.max !== undefined) {
+
       const hint = document.createElement("small");
-      hint.textContent = `Allowed range: ${spec.min} to ${spec.max}`;
+
+      hint.textContent =
+        `Allowed range: ${spec.min} to ${spec.max}`;
+
       wrapper.appendChild(hint);
     }
 
     return wrapper;
   }
 
+  // RENDER ALL 24 FEATURES
   function renderFields() {
-    const mainContainer = document.getElementById("mainFields");
-    const advancedContainer = document.getElementById("advancedFields");
+
+    const mainContainer =
+      document.getElementById("mainFields");
+
+    const advancedContainer =
+      document.getElementById("advancedFields");
 
     mainContainer.innerHTML = "";
     advancedContainer.innerHTML = "";
 
     mainFeatures.forEach(([name, label]) => {
-      mainContainer.appendChild(createField(name, label));
+      mainContainer.appendChild(
+        createField(name, label)
+      );
     });
 
     advancedFeatures.forEach(([name, label]) => {
-      advancedContainer.appendChild(createField(name, label));
+      advancedContainer.appendChild(
+        createField(name, label)
+      );
     });
   }
 
+  // LOAD SCHEMA FROM FASTAPI
   async function loadSchema() {
+
     try {
+
       const response = await fetch("/schema");
-      if (!response.ok) throw new Error("Could not load model schema.");
+
+      if (!response.ok) {
+        throw new Error("Could not load model schema.");
+      }
 
       const data = await response.json();
 
-      // Supports either {"features": {...}} or a direct feature dictionary.
       schema = data.features || data.schema || data;
 
       renderFields();
+
     } catch (error) {
-      document.getElementById("errorBox").style.display = "block";
-      document.getElementById("errorBox").textContent =
-        error.message + " Check that the /schema endpoint is working.";
+
+      const errorBox =
+        document.getElementById("errorBox");
+
+      errorBox.style.display = "block";
+
+      errorBox.textContent =
+        error.message +
+        " Check that the /schema endpoint is working.";
+
     }
   }
 
+  // READ AND VALIDATE ALL 24 INPUTS
   function readFormFeatures() {
+
     const features = {};
 
     [...mainFeatures, ...advancedFeatures].forEach(([name]) => {
+
       const input = document.getElementById(name);
 
       if (!input || input.value.trim() === "") {
-        throw new Error(`Please enter a value for ${name}.`);
+        throw new Error(
+          `Please enter a value for ${name}.`
+        );
       }
 
       const spec = getSpec(name);
       const options = getOptions(spec);
+
       let value = input.value;
 
-      if (!options && !binaryFeatures.has(name)) {
+      // NUMERIC FEATURES
+      if (spec.type === "numeric") {
+
         value = Number(value);
 
         if (!Number.isFinite(value)) {
-          throw new Error(`${name} must be a valid number.`);
+          throw new Error(
+            `${name} must be a valid number.`
+          );
         }
 
-        if (spec.min !== undefined && value < Number(spec.min)) {
-          throw new Error(`${name} is below the allowed minimum.`);
+        if (
+          spec.min !== undefined &&
+          value < Number(spec.min)
+        ) {
+          throw new Error(
+            `${name} is below the allowed minimum.`
+          );
         }
 
-        if (spec.max !== undefined && value > Number(spec.max)) {
-          throw new Error(`${name} exceeds the allowed maximum.`);
+        if (
+          spec.max !== undefined &&
+          value > Number(spec.max)
+        ) {
+          throw new Error(
+            `${name} exceeds the allowed maximum.`
+          );
         }
-      } else if (binaryFeatures.has(name)) {
+
+      }
+
+      // BINARY FEATURES
+      else if (binaryFeatures.has(name)) {
+
         value = Number(value);
+
+      }
+
+      // CATEGORICAL FEATURES REMAIN STRINGS
+      else {
+
+        value = String(value);
+
+        if (
+          options &&
+          !options.map(String).includes(value)
+        ) {
+          throw new Error(
+            `Invalid value for ${name}. Select an available option.`
+          );
+        }
+
       }
 
       features[name] = value;
+
     });
 
     return features;
   }
 
-  document.getElementById("fraudForm").addEventListener("submit", async event => {
-    event.preventDefault();
+  // SUBMIT PREDICTION REQUEST
+  document
+    .getElementById("fraudForm")
+    .addEventListener("submit", async event => {
 
-    const button = document.getElementById("submitBtn");
-    const errorBox = document.getElementById("errorBox");
-    const resultBox = document.getElementById("resultBox");
+      event.preventDefault();
 
-    errorBox.style.display = "none";
-    resultBox.style.display = "none";
+      const button =
+        document.getElementById("submitBtn");
 
-    try {
-      const features = readFormFeatures();
+      const errorBox =
+        document.getElementById("errorBox");
 
-      button.disabled = true;
-      button.textContent = "Analyzing...";
+      const resultBox =
+        document.getElementById("resultBox");
 
-      const response = await fetch("/predict", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ features })
-      });
+      errorBox.style.display = "none";
+      resultBox.style.display = "none";
 
-      const data = await response.json();
+      try {
 
-      if (!response.ok) {
-        throw new Error(data.detail || data.message || "Prediction failed.");
+        const features = readFormFeatures();
+
+        button.disabled = true;
+        button.textContent = "Analyzing...";
+
+        const response = await fetch("/predict", {
+
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json"
+          },
+
+          body: JSON.stringify({
+            features: features
+          })
+
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+
+          throw new Error(
+            data.detail ||
+            data.message ||
+            "Prediction failed."
+          );
+
+        }
+
+        const prediction = data.prediction;
+
+        const confidence =
+          data.confidence;
+
+        const isFraud =
+          prediction === 1 ||
+          prediction === "1";
+
+        resultBox.className =
+          "result " + (isFraud ? "danger" : "safe");
+
+        document
+          .getElementById("predictionText")
+          .textContent = isFraud
+            ? "Potential Fraud Detected"
+            : "Likely Legitimate";
+
+        if (
+          confidence !== null &&
+          confidence !== undefined &&
+          Number.isFinite(Number(confidence))
+        ) {
+
+          const percentage =
+            Math.max(
+              0,
+              Math.min(100, Number(confidence))
+            );
+
+          document
+            .getElementById("confidenceText")
+            .textContent =
+              `Model confidence: ${percentage.toFixed(2)}%`;
+
+          document
+            .getElementById("meterFill")
+            .style.width = percentage + "%";
+
+        } else {
+
+          document
+            .getElementById("confidenceText")
+            .textContent =
+              "Confidence was not provided by the model.";
+
+          document
+            .getElementById("meterFill")
+            .style.width = "0%";
+
+        }
+
+        document
+          .getElementById("resultNote")
+          .textContent = isFraud
+            ? "This transaction should be reviewed before approval."
+            : "The model did not classify this transaction as fraudulent.";
+
+        resultBox.style.display = "block";
+
+      } catch (error) {
+
+        errorBox.textContent = error.message;
+        errorBox.style.display = "block";
+
+      } finally {
+
+        button.disabled = false;
+        button.textContent = "Analyze Transaction";
+
       }
 
-      // Supports common response field names.
-      const prediction = data.prediction ?? data.fraud_prediction ?? data.result;
-      const confidence = Number(
-        data.confidence ?? data.probability ?? data.fraud_probability
-      );
-
-      const isFraud = prediction === 1 ||
-        prediction === "1" ||
-        String(prediction).toLowerCase().includes("fraud");
-
-      resultBox.className = "result " + (isFraud ? "danger" : "safe");
-
-      document.getElementById("predictionText").textContent =
-        isFraud ? "Potential Fraud Detected" : "Likely Legitimate";
-
-      if (Number.isFinite(confidence)) {
-        const percentage = confidence <= 1 ? confidence * 100 : confidence;
-        const safePercentage = Math.max(0, Math.min(100, percentage));
-
-        document.getElementById("confidenceText").textContent =
-          `Model confidence: ${safePercentage.toFixed(2)}%`;
-
-        document.getElementById("meterFill").style.width =
-          safePercentage + "%";
-      } else {
-        document.getElementById("confidenceText").textContent =
-          "Prediction received. Confidence was not included in the API response.";
-        document.getElementById("meterFill").style.width = "0%";
-      }
-
-      document.getElementById("resultNote").textContent = isFraud
-        ? "This transaction should be reviewed before approval."
-        : "The model did not classify this transaction as fraudulent.";
-
-      resultBox.style.display = "block";
-
-    } catch (error) {
-      errorBox.textContent = error.message;
-      errorBox.style.display = "block";
-    } finally {
-      button.disabled = false;
-      button.textContent = "Analyze Transaction";
-    }
-  });
+    });
 
   loadSchema();
+
 </script>
+
 </body>
 </html>
