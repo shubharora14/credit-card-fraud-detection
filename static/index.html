@@ -1,589 +1,547 @@
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FraudGuard | Transaction Security</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #718096;
+      --primary: #315efb;
+      --border: #e5eaf2;
+      --green: #07865c;
+      --red: #d9364f;
+    }
 
-    <title>Credit Card Fraud Detection</title>
+    * { box-sizing: border-box; }
 
-    <style>
-        * {
-            box-sizing: border-box;
-        }
+    body {
+      margin: 0;
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
 
-        body {
-            margin: 0;
-            padding: 35px 20px;
-            font-family: Arial, sans-serif;
-            background: #101827;
-            color: white;
-        }
+    header {
+      background: #111c35;
+      color: white;
+      padding: 20px 7%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+    }
 
-        .container {
-            max-width: 1050px;
-            margin: auto;
-            background: #1e293b;
-            padding: 30px;
-            border-radius: 14px;
-        }
+    .brand { font-size: 21px; font-weight: 800; }
+    .brand span { color: #83a0ff; }
 
-        h1 {
-            text-align: center;
-            margin-bottom: 10px;
-        }
+    .status {
+      font-size: 12px;
+      background: #1d3552;
+      padding: 8px 12px;
+      border-radius: 20px;
+      color: #9ff0ca;
+    }
 
-        .subtitle {
-            text-align: center;
-            color: #cbd5e1;
-            margin-bottom: 30px;
-        }
+    main {
+      width: min(1050px, 92%);
+      margin: 38px auto;
+    }
 
-        h2 {
-            font-size: 19px;
-            margin-top: 28px;
-            border-bottom: 1px solid #475569;
-            padding-bottom: 10px;
-        }
+    .intro { margin-bottom: 25px; }
+    .intro h1 { font-size: clamp(26px, 4vw, 36px); margin: 0 0 9px; }
+    .intro p { color: var(--muted); margin: 0; line-height: 1.6; }
 
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 18px;
-        }
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 300px;
+      gap: 22px;
+      align-items: start;
+    }
 
-        .field {
-            display: flex;
-            flex-direction: column;
-            gap: 7px;
-        }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 25px;
+      box-shadow: 0 5px 22px rgba(25, 45, 80, .04);
+    }
 
-        label {
-            font-size: 14px;
-            color: #e2e8f0;
-        }
+    .panel h2 { font-size: 19px; margin: 0 0 7px; }
+    .subtext { color: var(--muted); font-size: 13px; margin: 0 0 23px; }
 
-        input, select {
-            width: 100%;
-            padding: 11px;
-            border-radius: 7px;
-            border: 1px solid #475569;
-            background: #0f172a;
-            color: white;
-        }
+    .fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
 
-        button {
-            width: 100%;
-            margin-top: 28px;
-            padding: 14px;
-            background: #2563eb;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-        }
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 650;
+      margin-bottom: 8px;
+    }
 
-        button:hover {
-            background: #1d4ed8;
-        }
+    .field input, .field select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #dce3ee;
+      border-radius: 9px;
+      background: white;
+      font-size: 14px;
+      color: var(--text);
+      outline: none;
+    }
 
-        button:disabled {
-            opacity: 0.6;
-            cursor: wait;
-        }
+    .field input:focus, .field select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(49, 94, 251, .1);
+    }
 
-        #result {
-            display: none;
-            margin-top: 25px;
-            padding: 22px;
-            border-radius: 10px;
-            background: #0f172a;
-        }
+    .field small {
+      display: block;
+      color: var(--muted);
+      margin-top: 5px;
+      font-size: 11px;
+    }
 
-        .fraud {
-            border: 2px solid #ef4444;
-        }
+    details {
+      margin-top: 25px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      padding: 15px;
+    }
 
-        .legitimate {
-            border: 2px solid #22c55e;
-        }
+    summary {
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 14px;
+    }
 
-        .tips {
-            margin-top: 18px;
-            padding: 15px;
-            background: #1e293b;
-            border-radius: 8px;
-        }
+    .advanced-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      margin: 12px 0 18px;
+    }
 
-        .error {
-            color: #f87171;
-        }
+    button {
+      width: 100%;
+      border: 0;
+      background: var(--primary);
+      color: white;
+      padding: 15px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 22px;
+    }
 
-        .loading {
-            color: #93c5fd;
-        }
+    button:hover { background: #2449d5; }
+    button:disabled { opacity: .6; cursor: wait; }
 
-        @media (max-width: 650px) {
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
+    .side-card { margin-bottom: 17px; }
+    .side-card h3 { font-size: 14px; margin: 0 0 9px; }
+    .side-card p { font-size: 13px; color: var(--muted); line-height: 1.6; margin: 0; }
 
-            .container {
-                padding: 20px;
-            }
-        }
-    </style>
+    .result {
+      display: none;
+      margin-top: 22px;
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #f9fbff;
+    }
+
+    .result h3 { margin: 0 0 10px; }
+    .result.safe { border-color: #a6e5ce; background: #effbf6; }
+    .result.danger { border-color: #f2b5bf; background: #fff3f4; }
+
+    .result-value { font-size: 25px; font-weight: 800; }
+    .safe .result-value { color: var(--green); }
+    .danger .result-value { color: var(--red); }
+
+    .meter {
+      height: 9px;
+      background: #e4e9f1;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 13px 0;
+    }
+
+    .meter-fill {
+      height: 100%;
+      width: 0;
+      background: var(--primary);
+      transition: width .3s;
+    }
+
+    .error {
+      display: none;
+      margin-top: 15px;
+      padding: 12px;
+      color: #b42336;
+      background: #fff0f1;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      padding: 30px 10px;
+    }
+
+    @media (max-width: 760px) {
+      .layout { grid-template-columns: 1fr; }
+      .fields { grid-template-columns: 1fr; }
+      header { padding: 18px 5%; }
+      main { margin-top: 25px; }
+    }
+  </style>
 </head>
 
 <body>
+<header>
+  <div class="brand">Fraud<span>Guard</span></div>
+  <div class="status">● Transaction Analysis System</div>
+</header>
 
-<div class="container">
-
+<main>
+  <section class="intro">
     <h1>Credit Card Fraud Detection</h1>
+    <p>Enter transaction details to estimate the likelihood of fraudulent activity.</p>
+  </section>
 
-    <p class="subtitle">
-        Enter transaction details to predict potential credit card fraud.
-    </p>
+  <div class="layout">
+    <section class="panel">
+      <h2>Transaction Details</h2>
+      <p class="subtext">Enter the transaction information below.</p>
 
-    <form id="predictionForm">
+      <form id="fraudForm">
+        <div class="fields" id="mainFields"></div>
 
-        <div id="formFields">
-            <p class="loading">Loading transaction fields...</p>
-        </div>
+        <details>
+          <summary>Advanced Details · 15 additional features</summary>
+          <p class="advanced-note">
+            These fields are also used by the trained model. Enter the actual
+            transaction information where available. Do not guess fraud indicators.
+          </p>
+          <div class="fields" id="advancedFields"></div>
+        </details>
 
-        <button type="submit" id="predictButton">
-            Predict Transaction
-        </button>
+        <button type="submit" id="submitBtn">Analyze Transaction</button>
+      </form>
 
-    </form>
+      <div class="error" id="errorBox"></div>
 
-    <div id="result"></div>
+      <section class="result" id="resultBox" aria-live="polite">
+        <h3>Analysis Result</h3>
+        <div class="result-value" id="predictionText"></div>
+        <p id="confidenceText"></p>
+        <div class="meter"><div class="meter-fill" id="meterFill"></div></div>
+        <p id="resultNote"></p>
+        <small>
+          Model confidence is an estimate, not a guarantee that a transaction is
+          fraudulent or legitimate.
+        </small>
+      </section>
+    </section>
 
-</div>
+    <aside>
+      <div class="panel side-card">
+        <h3>How it works</h3>
+        <p>
+          The system evaluates transaction characteristics using your trained
+          machine learning model and returns a fraud prediction.
+        </p>
+      </div>
+
+      <div class="panel side-card">
+        <h3>24 model features</h3>
+        <p>
+          The main form contains 9 commonly used inputs. The remaining 15 inputs
+          are available under Advanced Details. All 24 are sent to the model.
+        </p>
+      </div>
+
+      <div class="panel side-card">
+        <h3>Important</h3>
+        <p>
+          This is a machine learning demonstration, not a replacement for bank
+          fraud monitoring or human review.
+        </p>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<footer>FraudGuard · Credit Card Fraud Detection</footer>
 
 <script>
+  const mainFeatures = [
+    ["amount_usd", "Transaction Amount"],
+    ["hours_since_last_txn", "Hours Since Last Transaction"],
+    ["txn_count_last_24h", "Transactions in Last 24 Hours"],
+    ["distance_from_home_km", "Distance From Home (km)"],
+    ["customer_age", "Customer Age"],
+    ["account_balance_usd", "Account Balance (USD)"],
+    ["merchant_category", "Merchant Category"],
+    ["card_type", "Card Type"],
+    ["channel", "Payment Channel"]
+  ];
 
-const formFields = document.getElementById("formFields");
-const resultBox = document.getElementById("result");
-const predictButton = document.getElementById("predictButton");
+  const advancedFeatures = [
+    ["card_age_months", "Card Age (months)"],
+    ["cvv_retry_count", "CVV Retry Count"],
+    ["velocity_score", "Velocity Score"],
+    ["time_of_day_hour", "Time of Day (hour)"],
+    ["day_of_week", "Day of Week"],
+    ["merchant_risk_score", "Merchant Risk Score"],
+    ["prior_disputes", "Previous Disputes"],
+    ["auth_method", "Authentication Method"],
+    ["device_type", "Device Type"],
+    ["is_foreign_transaction", "Foreign Transaction"],
+    ["is_new_merchant", "New Merchant"],
+    ["used_vpn", "VPN Used"],
+    ["ip_country_mismatch", "IP Country Mismatch"],
+    ["billing_shipping_mismatch", "Billing / Shipping Mismatch"],
+    ["is_ai_generated_scam_attempt", "AI-Generated Scam Attempt"]
+  ];
 
-let featureSchema = {};
+  const binaryFeatures = new Set([
+    "is_foreign_transaction",
+    "is_new_merchant",
+    "used_vpn",
+    "ip_country_mismatch",
+    "billing_shipping_mismatch",
+    "is_ai_generated_scam_attempt"
+  ]);
 
+  let schema = {};
 
-// ----------------------------------------
-// FORMAT FIELD LABELS
-// ----------------------------------------
+  function getSpec(name) {
+    return schema[name] || {};
+  }
 
-function formatLabel(name) {
+  function getOptions(spec) {
+    if (Array.isArray(spec)) return spec;
+    return spec.values || spec.categories || spec.options ||
+           spec.allowed_values || spec.enum || null;
+  }
 
-    return name
-        .replaceAll("_", " ")
-        .replace(/\b\w/g, letter => letter.toUpperCase());
+  function createField(name, label) {
+    const spec = getSpec(name);
+    const wrapper = document.createElement("div");
+    wrapper.className = "field";
 
-}
+    const labelElement = document.createElement("label");
+    labelElement.htmlFor = name;
+    labelElement.textContent = label;
+    wrapper.appendChild(labelElement);
 
+    const options = getOptions(spec);
+    let input;
 
-// ----------------------------------------
-// LOAD MODEL FEATURE SCHEMA
-// ----------------------------------------
+    if (options) {
+      input = document.createElement("select");
+      input.add(new Option("Select " + label, ""));
 
-async function loadSchema() {
+      options.forEach(value => {
+        input.add(new Option(String(value), String(value)));
+      });
+    } else if (binaryFeatures.has(name)) {
+      input = document.createElement("select");
+      input.add(new Option("Select " + label, ""));
+      input.add(new Option("No", "0"));
+      input.add(new Option("Yes", "1"));
+    } else {
+      input = document.createElement("input");
+      input.type = "number";
 
-    try {
-
-        const response = await fetch("/schema");
-
-        if (!response.ok) {
-            throw new Error("Could not load feature schema.");
-        }
-
-        const data = await response.json();
-
-        featureSchema = data.features;
-
-        createForm();
-
-    } catch (error) {
-
-        formFields.innerHTML =
-            `<p class="error">${error.message}</p>`;
-
+      if (spec.min !== undefined) input.min = spec.min;
+      if (spec.max !== undefined) input.max = spec.max;
+      if (spec.step !== undefined) input.step = spec.step;
+      else input.step = "any";
     }
 
-}
+    input.id = name;
+    input.name = name;
+    input.required = true;
 
-
-// ----------------------------------------
-// CREATE INPUT FIELDS AUTOMATICALLY
-// ----------------------------------------
-
-function createForm() {
-
-    formFields.innerHTML = "";
-
-    const groups = {
-        "Transaction Details": [
-            "amount_usd",
-            "hours_since_last_txn",
-            "txn_count_last_24h",
-            "distance_from_home_km",
-            "card_age_months",
-            "customer_age",
-            "account_balance_usd",
-            "time_of_day_hour",
-            "day_of_week"
-        ],
-
-        "Risk Indicators": [
-            "cvv_retry_count",
-            "velocity_score",
-            "merchant_risk_score",
-            "prior_disputes"
-        ],
-
-        "Merchant and Payment Details": [
-            "merchant_category",
-            "card_type",
-            "auth_method",
-            "channel",
-            "device_type"
-        ],
-
-        "Fraud Indicators": [
-            "is_foreign_transaction",
-            "is_new_merchant",
-            "used_vpn",
-            "ip_country_mismatch",
-            "billing_shipping_mismatch",
-            "is_ai_generated_scam_attempt"
-        ]
-    };
-
-    const allFeatures = Object.keys(featureSchema);
-
-    for (const [groupName, groupFeatures] of Object.entries(groups)) {
-
-        const availableFeatures = groupFeatures.filter(
-            feature => allFeatures.includes(feature)
-        );
-
-        if (availableFeatures.length === 0) continue;
-
-        const heading = document.createElement("h2");
-        heading.textContent = groupName;
-
-        formFields.appendChild(heading);
-
-        const grid = document.createElement("div");
-        grid.className = "form-grid";
-
-        availableFeatures.forEach(feature => {
-
-            const rule = featureSchema[feature];
-
-            const wrapper = document.createElement("div");
-            wrapper.className = "field";
-
-            const label = document.createElement("label");
-            label.textContent = formatLabel(feature);
-            label.htmlFor = feature;
-
-            let input;
-
-            if (rule.type === "categorical") {
-
-                input = document.createElement("select");
-
-                const placeholder = document.createElement("option");
-                placeholder.value = "";
-                placeholder.textContent = "Select an option";
-                placeholder.disabled = true;
-                placeholder.selected = true;
-
-                input.appendChild(placeholder);
-
-                rule.allowed.forEach(value => {
-
-                    const option = document.createElement("option");
-
-                    option.value = value;
-                    option.textContent = value;
-
-                    input.appendChild(option);
-
-                });
-
-            } else {
-
-                input = document.createElement("input");
-
-                input.type = "number";
-                input.step = "any";
-
-                input.min = rule.min;
-                input.max = rule.max;
-
-                input.placeholder =
-                    `${rule.min} to ${rule.max}`;
-
-            }
-
-            input.id = feature;
-            input.name = feature;
-            input.required = true;
-
-            wrapper.appendChild(label);
-            wrapper.appendChild(input);
-
-            grid.appendChild(wrapper);
-
-        });
-
-        formFields.appendChild(grid);
-
+    // Only use defaults explicitly supplied by the backend.
+    if (spec.default !== undefined && spec.default !== null) {
+      input.value = String(spec.default);
+    } else if (spec.median !== undefined && spec.median !== null) {
+      input.value = String(spec.median);
+    } else if (spec.mode !== undefined && spec.mode !== null) {
+      input.value = String(spec.mode);
     }
 
-    // Add any model features not included in the predefined groups.
-    const groupedFeatures = Object.values(groups).flat();
+    wrapper.appendChild(input);
 
-    const remainingFeatures = allFeatures.filter(
-        feature => !groupedFeatures.includes(feature)
-    );
-
-    if (remainingFeatures.length > 0) {
-
-        const heading = document.createElement("h2");
-        heading.textContent = "Additional Features";
-
-        formFields.appendChild(heading);
-
-        const grid = document.createElement("div");
-        grid.className = "form-grid";
-
-        remainingFeatures.forEach(feature => {
-
-            const rule = featureSchema[feature];
-
-            const wrapper = document.createElement("div");
-            wrapper.className = "field";
-
-            const label = document.createElement("label");
-            label.textContent = formatLabel(feature);
-
-            let input;
-
-            if (rule.type === "categorical") {
-
-                input = document.createElement("select");
-
-                const placeholder = document.createElement("option");
-                placeholder.value = "";
-                placeholder.textContent = "Select an option";
-                placeholder.disabled = true;
-                placeholder.selected = true;
-
-                input.appendChild(placeholder);
-
-                rule.allowed.forEach(value => {
-
-                    const option = document.createElement("option");
-                    option.value = value;
-                    option.textContent = value;
-
-                    input.appendChild(option);
-
-                });
-
-            } else {
-
-                input = document.createElement("input");
-                input.type = "number";
-                input.step = "any";
-                input.min = rule.min;
-                input.max = rule.max;
-
-            }
-
-            input.id = feature;
-            input.name = feature;
-            input.required = true;
-
-            wrapper.appendChild(label);
-            wrapper.appendChild(input);
-
-            grid.appendChild(wrapper);
-
-        });
-
-        formFields.appendChild(grid);
-
+    if (spec.min !== undefined && spec.max !== undefined) {
+      const hint = document.createElement("small");
+      hint.textContent = `Allowed range: ${spec.min} to ${spec.max}`;
+      wrapper.appendChild(hint);
     }
 
-}
+    return wrapper;
+  }
 
+  function renderFields() {
+    const mainContainer = document.getElementById("mainFields");
+    const advancedContainer = document.getElementById("advancedFields");
 
-// ----------------------------------------
-// COLLECT INPUT VALUES
-// ----------------------------------------
+    mainContainer.innerHTML = "";
+    advancedContainer.innerHTML = "";
 
-function collectFeatures() {
-
-    const features = {};
-
-    for (const [name, rule] of Object.entries(featureSchema)) {
-
-        const input = document.getElementById(name);
-
-        if (rule.type === "numeric") {
-
-            features[name] = Number(input.value);
-
-        } else {
-
-            features[name] = input.value;
-
-        }
-
-    }
-
-    return features;
-
-}
-
-
-// ----------------------------------------
-// FRAUD PREVENTION TIPS
-// ----------------------------------------
-
-function getTips(features, prediction) {
-
-    if (prediction === 1) {
-
-        return [
-            "Verify the transaction with the cardholder.",
-            "Review unusual transaction locations and device details.",
-            "Check repeated CVV attempts and suspicious merchant activity."
-        ];
-
-    }
-
-    return [
-        "Continue monitoring transaction activity.",
-        "Use secure authentication methods.",
-        "Review unusual spending patterns regularly."
-    ];
-
-}
-
-
-// ----------------------------------------
-// SUBMIT PREDICTION
-// ----------------------------------------
-
-document.getElementById("predictionForm")
-    .addEventListener("submit", async function(event) {
-
-        event.preventDefault();
-
-        resultBox.style.display = "block";
-        resultBox.className = "";
-        resultBox.textContent = "Analyzing transaction...";
-
-        predictButton.disabled = true;
-        predictButton.textContent = "Processing...";
-
-        try {
-
-            const features = collectFeatures();
-
-            const response = await fetch("/predict", {
-
-                method: "POST",
-
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
-                body: JSON.stringify({
-                    features: features
-                })
-
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-
-                const message = typeof data.detail === "string"
-                    ? data.detail
-                    : JSON.stringify(data.detail);
-
-                throw new Error(message);
-
-            }
-
-            const prediction = data.prediction;
-
-            const tips = getTips(features, prediction);
-
-            resultBox.className =
-                prediction === 1 ? "fraud" : "legitimate";
-
-            resultBox.innerHTML = `
-                <h2>Prediction Result</h2>
-
-                <h3>${data.result}</h3>
-
-                <p>
-                    Prediction:
-                    <strong>${prediction}</strong>
-                </p>
-
-                <p>
-                    Model confidence:
-                    <strong>
-                        ${data.confidence === null
-                            ? "Not available"
-                            : data.confidence + "%"}
-                    </strong>
-                </p>
-
-                <div class="tips">
-
-                    <h3>Recommended Actions</h3>
-
-                    <ul>
-                        ${tips.map(tip => `<li>${tip}</li>`).join("")}
-                    </ul>
-
-                </div>
-            `;
-
-        } catch (error) {
-
-            resultBox.className = "fraud";
-
-            resultBox.innerHTML = `
-                <h3>Prediction Error</h3>
-                <p>${error.message}</p>
-            `;
-
-        } finally {
-
-            predictButton.disabled = false;
-            predictButton.textContent = "Predict Transaction";
-
-        }
-
+    mainFeatures.forEach(([name, label]) => {
+      mainContainer.appendChild(createField(name, label));
     });
 
+    advancedFeatures.forEach(([name, label]) => {
+      advancedContainer.appendChild(createField(name, label));
+    });
+  }
 
-// Load the form when the page opens.
-loadSchema();
+  async function loadSchema() {
+    try {
+      const response = await fetch("/schema");
+      if (!response.ok) throw new Error("Could not load model schema.");
 
+      const data = await response.json();
+
+      // Supports either {"features": {...}} or a direct feature dictionary.
+      schema = data.features || data.schema || data;
+
+      renderFields();
+    } catch (error) {
+      document.getElementById("errorBox").style.display = "block";
+      document.getElementById("errorBox").textContent =
+        error.message + " Check that the /schema endpoint is working.";
+    }
+  }
+
+  function readFormFeatures() {
+    const features = {};
+
+    [...mainFeatures, ...advancedFeatures].forEach(([name]) => {
+      const input = document.getElementById(name);
+
+      if (!input || input.value.trim() === "") {
+        throw new Error(`Please enter a value for ${name}.`);
+      }
+
+      const spec = getSpec(name);
+      const options = getOptions(spec);
+      let value = input.value;
+
+      if (!options && !binaryFeatures.has(name)) {
+        value = Number(value);
+
+        if (!Number.isFinite(value)) {
+          throw new Error(`${name} must be a valid number.`);
+        }
+
+        if (spec.min !== undefined && value < Number(spec.min)) {
+          throw new Error(`${name} is below the allowed minimum.`);
+        }
+
+        if (spec.max !== undefined && value > Number(spec.max)) {
+          throw new Error(`${name} exceeds the allowed maximum.`);
+        }
+      } else if (binaryFeatures.has(name)) {
+        value = Number(value);
+      }
+
+      features[name] = value;
+    });
+
+    return features;
+  }
+
+  document.getElementById("fraudForm").addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const button = document.getElementById("submitBtn");
+    const errorBox = document.getElementById("errorBox");
+    const resultBox = document.getElementById("resultBox");
+
+    errorBox.style.display = "none";
+    resultBox.style.display = "none";
+
+    try {
+      const features = readFormFeatures();
+
+      button.disabled = true;
+      button.textContent = "Analyzing...";
+
+      const response = await fetch("/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ features })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || data.message || "Prediction failed.");
+      }
+
+      // Supports common response field names.
+      const prediction = data.prediction ?? data.fraud_prediction ?? data.result;
+      const confidence = Number(
+        data.confidence ?? data.probability ?? data.fraud_probability
+      );
+
+      const isFraud = prediction === 1 ||
+        prediction === "1" ||
+        String(prediction).toLowerCase().includes("fraud");
+
+      resultBox.className = "result " + (isFraud ? "danger" : "safe");
+
+      document.getElementById("predictionText").textContent =
+        isFraud ? "Potential Fraud Detected" : "Likely Legitimate";
+
+      if (Number.isFinite(confidence)) {
+        const percentage = confidence <= 1 ? confidence * 100 : confidence;
+        const safePercentage = Math.max(0, Math.min(100, percentage));
+
+        document.getElementById("confidenceText").textContent =
+          `Model confidence: ${safePercentage.toFixed(2)}%`;
+
+        document.getElementById("meterFill").style.width =
+          safePercentage + "%";
+      } else {
+        document.getElementById("confidenceText").textContent =
+          "Prediction received. Confidence was not included in the API response.";
+        document.getElementById("meterFill").style.width = "0%";
+      }
+
+      document.getElementById("resultNote").textContent = isFraud
+        ? "This transaction should be reviewed before approval."
+        : "The model did not classify this transaction as fraudulent.";
+
+      resultBox.style.display = "block";
+
+    } catch (error) {
+      errorBox.textContent = error.message;
+      errorBox.style.display = "block";
+    } finally {
+      button.disabled = false;
+      button.textContent = "Analyze Transaction";
+    }
+  });
+
+  loadSchema();
 </script>
-
 </body>
 </html>
